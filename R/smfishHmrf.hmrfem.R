@@ -45,6 +45,155 @@ smfishHmrf.hmrfem <- function(y, neighbors, numnei, blocks, beta=0.5, mu, sigma,
     list(prob=prob, mu=mu, sigma=sigma)
 }
 
+smfishHmrf.generate.centroid.use.exist <-function(name="test", input_dir=".", par_k){
+	indir <- fs::path(input_dir, paste0("k_", par_k))
+	centroid_file <- fs::path(indir, paste0("f", test, ".gene.ALL.centroid.txt"))
+	kmeans_file <- fs::path(indir, paste0("f", test, ".gene.ALL.kmeans.txt"))
+	centroid<-read.table(centroid_file, header=F, row.names=1)
+	centroid<-as.matrix(centroid)	
+	kmeans<-read.table(kmeans_file, header=F, row.names=1)
+	kmeans<-as.matrix(kmeans)
+	kk<-NULL
+	kk$centers<-centroid
+	kk$cluster<-kmeans
+	kk
+}
+
+smfishHmrf.generate.centroid.it <- function(expr_file, par_k, par_seed=-1, nstart, name="test", output_dir="."){
+	y<-smfishHmrf.read.expression(expr_file)
+	kk<-smfishHmrf.generate.centroid(y, par_k, par_seed, nstart)
+	savedir <- fs::path(output_dir, paste0("k_", par_k))
+	dir.create(savedir, showWarnings=TRUE)
+	centroid_file <- fs::path(savedir, paste0("f", test, ".gene.ALL.centroid.txt"))
+	kmeans_file <- fs::path(savedir, paste0("f", test, ".gene.ALL.kmeans.txt"))
+	smfishHmrf.generate.centroid.save(kk, centroid_file, kmeans_file)
+	kk
+}
+
+smfishHmrf.read.expression <- function(expr_file){
+	y<-read.table(expr_file, header=F, row.names=1)
+	y<-as.matrix(y)
+	y
+}
+
+#kk is kmeans clustering results
+smfishHmrf.generate.centroid.save <- function(kk, centroid_file, kmeans_file){
+	write.table(kk$cluster, file=kmeans_file, sep=" ", quote=F, col.names=F, row.names=T)
+	write.table(kk$centers, file=centroid_file, sep=" ", quote=F, col.names=F, row.names=T)
+}
+
+smfishHmrf.generate.centroid <- function(y, par_k, par_seed=-1, nstart){
+	#par_k <- commandArgs(trailingOnly = TRUE)[1]
+	#par_seed <- commandArgs(trailingOnly = TRUE)[2]
+	#nstart <- commandArgs(trailingOnly = TRUE)[3]
+	#mem_file <- commandArgs(trailingOnly = TRUE)[4]
+	#centroid_file <- commandArgs(trailingOnly = TRUE)[5]
+	#kmeans_file <- commandArgs(trailingOnly = TRUE)[6]
+	#par_k <- as.integer(par_k)
+	#par_seed <- as.integer(par_seed)
+	#nstart <- as.integer(nstart)
+	if(par_seed!=-1 & par_seed>0){
+		set.seed(par_seed)
+	}
+	#y<-read.table(mem_file, header=F, row.names=1)
+	y<-as.matrix(y)
+	k<-par_k
+	m<-dim(y)[2]
+	kk<-kmeans(y, k, nstart=nstart, iter.max=100)
+	#if(write_file==TRUE){
+	#	write.table(kk$cluster, file=kmeans_file, sep=" ", quote=F, col.names=F, row.names=T)
+	#	write.table(kk$centers, file=centroid_file, sep=" ", quote=F, col.names=F, row.names=T)
+	#}
+	kk$centers<-as.matrix(kk$centers)
+	kk$cluster<-as.matrix(kk$cluster)
+	kk
+}
+
+smfishHmrf.hmrfem.multi.it.min <- function(mem_file, nei_file, block_file, kk, par_k, 
+name="test", output_dir=".", tolerance=1e-5, beta=0, beta_increment=1, beta_num_iter=10){
+	#file reading
+	y<-read.table(mem_file, header=F, row.names=1)
+	y<-as.matrix(y)
+	nei<-read.table(nei_file, header=F, row.names=1)
+	colnames(nei)<-NULL
+	rownames(nei)<-NULL
+	nei<-as.matrix(nei)
+	blocks<-read.table(block_file, header=F, row.names=1)
+	blocks<-c(t(blocks))
+	maxblock <- max(blocks)
+	blocks<-lapply(1:maxblock, function(x) which(blocks == x))
+	numnei<-apply(nei, 1, function(x) sum(x!=-1))
+	#centroid<-read.table(centroid_file, header=F, row.names=1)
+	#centroid<-as.matrix(centroid)
+	centroid<-kk$centers
+
+	#parameter setting
+	k<-par_k
+	m<-dim(y)[2]
+	sigma <-array(0, c(m,m,k))
+	for(i in 1:k){
+		sigma[, ,i] <- cov(y)
+		print(rcond(sigma[,,i]))
+	}
+	mu<-array(0, c(m,k))
+	kk2<-centroid
+	for(i in 1:k){
+		mu[,i] <- kk2[i,]
+	}
+	numcell<-dim(y)[1]
+	kk_dist<-array(0, c(numcell, k))
+	for(i in 1:numcell){
+		for(j in 1:k){
+			kk_dist[i,j] <- dist(rbind(y[i,], mu[,j]), method="euclidean")
+		}
+	}
+	clust_mem<-apply(kk_dist, 1, function(x) which(x==min(x))) 
+	lclust<-lapply(1:k, function(x) which(clust_mem == x))
+	damp<-array(0, c(k))
+	for(i in 1:k){
+		sigma[, , i] <- cov(y[lclust[[i]], ])
+		#default tolerance is 1e-60
+		di<-findDampFactor(sigma[,,i], factor=1.05, d_cutoff=tolerance, startValue=0.0001)
+		if(is.null(di)){
+			damp[i] = 0
+		}else{
+			damp[i] = di
+		}
+	}
+
+	smfishHmrf.hmrfem.multi.it(name, outdir, k, y, nei, beta=beta, beta_increment=beta_increment, beta_num_iter=beta_num_iter, 
+	numnei, blocks, mu, sigma, damp)
+}
+
+#needs y, nei, beta, numnei, blocks, mu, sigma, damp
+smfishHmrf.hmrfem.multi.save <- function(name, outdir, beta, tc.hmrfem, k){
+	out_file <- sprintf("%s/%s.%.1f.prob.txt", outdir, name, par_beta) #hmrfem probability
+	out_file_2 <- sprintf("%s/%s.%.1f.centroid.txt", outdir, name, par_beta) #hmrfem centroids
+	out_file_3 <- sprintf("%s/%s.%.1f.hmrf.covariance.txt", outdir, name, par_beta) #hmrfem covariance
+	out_file_unnorm <- gsub("prob", "unnormprob", out_file)
+
+	write.table(tc.hmrfem$prob, file=out_file, sep=" ", quote=F, col.names=F, row.names=T)
+	write.table(tc.hmrfem$unnormprob, file=out_file_unnorm, sep=" ", quote=F, col.names=F, row.names=T)
+	write.table(t(tc.hmrfem$mu), file=out_file_2, sep=" ", quote=F, col.names=F, row.names=T)
+	write.table(tc.hmrfem$sigma[,,1], file=out_file_3, sep=" ", quote=F, col.names=F, row.names=T)
+	for(i in 2:k){
+		write.table(tc.hmrfem$sigma[,,i], file=out_file_3, sep=" ", quote=F, col.names=F, row.names=T, append=T)
+	}
+}
+
+smfishHmrf.hmrfem.multi.it <- function(name, outdir, k, y, nei, beta=0, beta_increment=1, beta_num_iter=10, 
+numnei, blocks, mu, sigma, damp){
+	beta_current <- beta
+	for(bx in 1:beta_num_iter){
+		print(sprintf("Doing beta=%.3f", beta_current))
+		tc.hmrfem<-smfishHmrf.hmrfem.multi(y=y, neighbors=nei, beta=beta_current, numnei=numnei, 
+		blocks=blocks, mu=mu, sigma=sigma, verbose=T, err=1e-7, maxit=50, dampFactor=damp)
+		smfishHmrf.hmrfem.multi.save(name, outdir, beta_current, tc.hmrfem, k)
+		#do_one(name, outdir, k, y, nei, beta_current, numnei, blocks, mu, sigma, damp)
+		beta_current <- beta_current + beta_increment
+	}
+}
+
 smfishHmrf.hmrfem.multi <- function(y, neighbors, numnei, blocks, beta=0.5, mu, sigma, err=1e-4, maxit=20, verbose, dampFactor=NULL, forceDetectDamp=FALSE){
     checkErrorsMulti(mu=mu, sigma=sigma, err=err)
     if (length(err) < 2)
