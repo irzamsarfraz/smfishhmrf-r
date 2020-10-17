@@ -1,4 +1,8 @@
-#check errors of input of tissue classi 
+#' @title checkErrors
+#' @name checkErrors
+#' @description check errors in mu and sigma (single variate)
+#' @keywords internal
+#check errors of input of tissue classification
 checkErrors <- function(mu, sigma, err=NULL){
     k <- length(mu)
     if (k != length(sigma))
@@ -7,6 +11,11 @@ checkErrors <- function(mu, sigma, err=NULL){
         if (any(err < 0)) stop("All 'err's have to be positive.")
 }
 
+
+#' @title getDen
+#' @name getDen
+#' @description calculate density given multivariate normal
+#' @keywords internal
 #Compute the density of all vertices.
 getDen <- function(yunique, n.yunique, ymatch, mu, sigma){
     k <- length(mu)
@@ -19,11 +28,21 @@ getDen <- function(yunique, n.yunique, ymatch, mu, sigma){
     den
 }
 
+
+#' @title relerr
+#' @name relerr
+#' @description compute the relative errors (single variate)
+#' @keywords internal
 #compute the relative errors
 relerr <- function(x, y){
     max(abs(x - y)) / (1 + max(abs(x), abs(y)))
 }
 
+
+#' @title initialIndices
+#' @name initialIndices
+#' @description initialize indices in the table (single variate)
+#' @keywords internal
 #Initialize indices
 initialIndices <- function(y, nvert, mu, sigma, k){
     index <- max.col(matrix(dnorm(rep(y,k), mean=rep(mu, each=nvert),
@@ -32,6 +51,11 @@ initialIndices <- function(y, nvert, mu, sigma, k){
     rbind(indices, rep(0L,k))
 }
  
+
+#' @title checkStopVerbose
+#' @name checkStopVerbose
+#' @description check whether or not to stop (i.e. convergence)
+#' @keywords internal
 #check whether to stop the interation or not and whether ouput the curren state
 checkStopVerbose <- function(muold, mu, sigmaold, sigma, err, it, maxit, verbose){
     flag <- 0
@@ -46,6 +70,10 @@ checkStopVerbose <- function(muold, mu, sigmaold, sigma, err, it, maxit, verbose
 }
 
 
+#' @title initialIndicesMulti
+#' @name initialIndicesMulti
+#' @description initialize indices for multivariate scenario
+#' @keywords internal
 #Initialize indices (multivariate), assume sub=FALSE, type="pure", subvox=NULL
 initialIndicesMulti <- function(y, mu, sigma, k, dampFactor=NULL, forceDetectDamp=FALSE){
 	nvert <- dim(y)[1]
@@ -87,10 +115,18 @@ initialIndicesMulti <- function(y, mu, sigma, k, dampFactor=NULL, forceDetectDam
     rbind(indices, rep(0L,k))
 }
 
+#' @title relerr.multi
+#' @name relerr.multi
+#' @description relative errors for multivariate scenario
+#' @keywords internal
 relerr.multi <- function(x, y){
     max(abs(x - y)) / (1 + max(abs(x), abs(y)))
 }
 
+#' @title findDampFactor
+#' @name findDampFactor
+#' @description find dampening factor
+#' @keywords internal
 findDampFactor <- function(sigma, factor=1.05, d_cutoff=1e-60, startValue=0.0001){
 	determinant <- det(sigma)
 	#factor <- 1.05
@@ -128,6 +164,10 @@ findDampFactor <- function(sigma, factor=1.05, d_cutoff=1e-60, startValue=0.0001
 	damp
 }
 
+#' @title checkStopVerboseMulti
+#' @name checkStopVerboseMulti
+#' @description check whether or not to stop (i.e. convergence) (multivariate)
+#' @keywords internal
 #check whether to stop the interation or not and whether ouput the curren state
 checkStopVerboseMulti <- function(muold, mu, sigmaold, sigma, err, it, maxit, verbose){
     flag <- 0
@@ -141,6 +181,10 @@ checkStopVerboseMulti <- function(muold, mu, sigmaold, sigma, err, it, maxit, ve
     flag
 }
     
+#' @title checkErrorsMulti
+#' @name checkErrorsMulti
+#' @description check errors in mu and sigma (multivariate)
+#' @keywords internal
 #check errors of input of tissue classi 
 checkErrorsMulti <- function(mu, sigma, err=NULL){
 	k <- dim(mu)[2]
