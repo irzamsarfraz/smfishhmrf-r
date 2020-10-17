@@ -21,7 +21,7 @@ smfishHmrf.hmrfem <- function(y, neighbors, numnei, blocks, beta=0.5, mu, sigma,
     muold <- rep(0,k)
     sigmaold <- rep(0,k)
     niter <- 10
-    indices <- initialIndices(y, nvert, mu, sigma, k, sub=FALSE)
+    indices <- initialIndices(y, nvert, mu, sigma, k)
 
     it <- 0
 
