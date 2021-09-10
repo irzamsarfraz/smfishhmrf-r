@@ -430,14 +430,18 @@ smfishHmrf.hmrfem.multi.save <- function(name, outdir, beta, tc.hmrfem, k){
 smfishHmrf.hmrfem.multi.it <- function(name, outdir, k, y, nei, beta=0, beta_increment=1, beta_num_iter=10, 
 numnei, blocks, mu, sigma, damp){
 	beta_current <- beta
+	res <- c()
 	for(bx in 1:beta_num_iter){
 		print(sprintf("Doing beta=%.3f", beta_current))
 		tc.hmrfem<-smfishHmrf.hmrfem.multi(y=y, neighbors=nei, beta=beta_current, numnei=numnei, 
 		blocks=blocks, mu=mu, sigma=sigma, verbose=T, err=1e-7, maxit=50, dampFactor=damp)
 		smfishHmrf.hmrfem.multi.save(name, outdir, beta_current, tc.hmrfem, k)
 		#do_one(name, outdir, k, y, nei, beta_current, numnei, blocks, mu, sigma, damp)
+		t_key <- sprintf("k=%d b=%.2f", k, beta_current)
+		res[[t_key]] <- tc.hmrfem
 		beta_current <- beta_current + beta_increment
 	}
+	res
 }
 
 #' @name smfishHmrf.hmrfem.multi
@@ -536,11 +540,40 @@ smfishHmrf.hmrfem.multi <- function(y, neighbors, numnei, blocks, beta=0.5, mu, 
         mu <- updateMeansMulti(prob, y)
         sigma <- updateCovariancesMulti(prob, y, mu, nvert, k)
 
-		#need to check this!
         flag <- checkStopVerboseMulti(muold, mu, sigmaold, sigma, err, it, maxit, verbose)
 
         if(flag==1) break
     }
-    list(prob=prob, mu=mu, sigma=sigma, unnormprob=unnorm_prob)
+
+	class_id <- max.col(prob, "first")
+
+	t_tot <- 0
+	t_prob <- rep(0, dim(prob)[2])
+	for(j in 1:dim(prob)[1]){
+		t_tot_density <- 0
+		for(k in 1:dim(prob)[2]){
+			t_tot_density <- t_tot_density + prob[j,k]
+		}
+		t_this_prob <- rep(0, dim(prob)[2])
+		for(k in 1:dim(prob)[2]){
+			t_this_prob[k] <- prob[j,k] / t_tot_density
+			t_prob[k] = t_prob[k] + t_this_prob[k]
+		}
+		t_tot <- t_tot + 1
+	}
+	for(k in 1:dim(prob)[2]){
+		t_prob[k] <- t_prob[k] / t_tot
+	}
+	t_likelihood <- 0
+	for(j in 1:dim(prob)[1]){
+		t_this_like <- 0
+		for(k in 1:dim(prob)[2]){
+			t_this_like <- t_this_like + t_prob[k] * prob[j,k]
+		}
+		t_likelihood <- t_likelihood + log(t_this_like)
+	}
+
+	#t_likelihood <- t_likelihood / t_tot
+    list(prob=prob, mu=mu, sigma=sigma, unnormprob=unnorm_prob, class=class_id, likelihood=t_likelihood)
 }
 

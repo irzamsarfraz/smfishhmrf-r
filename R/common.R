@@ -148,7 +148,7 @@ findDampFactor <- function(sigma, factor=1.05, d_cutoff=1e-60, startValue=0.0001
 	numdim<-dim(sigma)[1]
 	damp<-NULL
 	if(determinant<d_cutoff){
-		print("Warning, need to add dampening factor to diagonal entries")
+		#print("Warning, need to add dampening factor to diagonal entries")
 		damp <- startValue
 		sigma_2 <- array(0, dim(sigma))
 		sigma_2 <- sigma + diag(numdim) * damp
@@ -173,7 +173,8 @@ findDampFactor <- function(sigma, factor=1.05, d_cutoff=1e-60, startValue=0.0001
 				}
 			}
 		}
-		print(damp)
+		#print(damp)
+		print(paste0("dampen factor ", damp))
 	}
 	damp
 }
