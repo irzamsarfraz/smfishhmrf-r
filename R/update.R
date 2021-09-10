@@ -79,7 +79,7 @@ updateStdevs <- function(prob, y, mu, nvert, k){
 }
 
 updateIndicesHMRFEM <- function(neighbors, numnei, maxnei, blocks, nblocks, beta, k, indices, den){
-    .Call("updateIndicesHMRFEM", blocks, neighbors, numnei, maxnei, beta, k, indices, den)
+    .Call("updateIndicesHMRFEM", blocks, neighbors, numnei, maxnei, beta, k, indices, den, PACKAGE="smfishHmrf")
 }
 
 

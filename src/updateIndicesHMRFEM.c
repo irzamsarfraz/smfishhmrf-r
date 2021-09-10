@@ -65,7 +65,7 @@ SEXP updateIndicesHMRFEM(SEXP blocks, SEXP sneighbors, SEXP snumnei, SEXP smaxne
 		for (i = 0; i < n; i++) {
 			int j, m;
 			double s = 0.0;
-			int number = 0;
+			//int number = 0;
 			/* compute the posterior weights for the different classes */
 			for (j = 0; j < k; j++) {
 				Ni[j] = 0;
@@ -86,7 +86,7 @@ SEXP updateIndicesHMRFEM(SEXP blocks, SEXP sneighbors, SEXP snumnei, SEXP smaxne
 			
 			for (j = 0; j < k; j++) {
 				double exp_val = (double) exp(d_beta * Ni[j]);
-				int ix = points[i] - 1 + j * ldD;
+				//int ix = points[i] - 1 + j * ldD;
 				prob[j] = exp(log(den[points[i] - 1 + j * ldD]) + log(exp_val));
 				log_prob[j] = log(den[points[i] - 1 + j * ldD]) + log(exp_val);
 				s += prob[j];

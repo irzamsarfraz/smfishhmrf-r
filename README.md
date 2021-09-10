@@ -29,7 +29,7 @@ random field model** (in this case **Pott's model**) can be used to capture
 the spatial similarity of cells by making homogeneous the relationship
 between neighboring cells.
 
-Typical package (such as [ref1](http://www.tandfonline.com/doi/abs/10.1198/jasa.2011.ap09529)) 
+Typical package (such as [ref1](https://www.tandfonline.com/doi/abs/10.1198/jasa.2011.ap09529)) 
 runs HMRF on magnetic resonance imaging (MRI) data and is restricted to 1-channel (grayscale) 
 and fixed to 4-neighbor regular grid of pixels.
 In our case, the package `smfishHmrf` is more general:
@@ -46,6 +46,3 @@ To illustrate the method, we have tested it on
 mouse brain visual cortex seqFISH imaged cells.
 
 
-## Installation
-
-See [INSTALL.md](INSTALL.md)

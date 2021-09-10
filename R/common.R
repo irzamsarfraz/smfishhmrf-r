@@ -15,6 +15,7 @@ checkErrors <- function(mu, sigma, err=NULL){
 #' @title getDen
 #' @name getDen
 #' @description calculate density given multivariate normal
+#' @importFrom stats dnorm
 #' @keywords internal
 #Compute the density of all vertices.
 getDen <- function(yunique, n.yunique, ymatch, mu, sigma){
@@ -22,7 +23,7 @@ getDen <- function(yunique, n.yunique, ymatch, mu, sigma){
     dy <- rep(yunique, each=k)
     dmu <- rep(mu, n.yunique)
     dsigma <- rep(sigma, n.yunique)
-    den <-  dnorm(dy, mean = dmu, sd = dsigma)
+    den <-  stats::dnorm(dy, mean = dmu, sd = dsigma)
     den <- matrix(den, ncol=k, byrow=T)
     den <- den[ymatch,]
     den
@@ -45,7 +46,7 @@ relerr <- function(x, y){
 #' @keywords internal
 #Initialize indices
 initialIndices <- function(y, nvert, mu, sigma, k){
-    index <- max.col(matrix(dnorm(rep(y,k), mean=rep(mu, each=nvert),
+    index <- max.col(matrix(stats::dnorm(rep(y,k), mean=rep(mu, each=nvert),
                                       sd=rep(sigma, each=nvert)), ncol=k))
     indices <- do.call(cbind, lapply(1:k, function(x) indices==x))
     rbind(indices, rep(0L,k))
@@ -73,14 +74,15 @@ checkStopVerbose <- function(muold, mu, sigmaold, sigma, err, it, maxit, verbose
 #' @title initialIndicesMulti
 #' @name initialIndicesMulti
 #' @description initialize indices for multivariate scenario
+#' @importFrom pracma eps std
 #' @keywords internal
 #Initialize indices (multivariate), assume sub=FALSE, type="pure", subvox=NULL
 initialIndicesMulti <- function(y, mu, sigma, k, dampFactor=NULL, forceDetectDamp=FALSE){
 	nvert <- dim(y)[1]
 	numdim <- dim(y)[2]
 
-	eps <- eps()
-	very_small <- mean(std(y)) * (1/k) * 0.0001
+	eps <- pracma::eps()
+	very_small <- mean(pracma::std(y)) * (1/k) * 0.0001
 	
 	den = matrix(0, nrow=nvert, ncol=k)
 
@@ -126,7 +128,19 @@ relerr.multi <- function(x, y){
 #' @title findDampFactor
 #' @name findDampFactor
 #' @description find dampening factor
-#' @keywords internal
+#' @param sigma covariance matrix
+#' @param factor step factor
+#' @param d_cutoff determinant cutoff
+#' @param startValue starting value to initialize the finding 
+#' @export
+#' @examples 
+#' data(seqfishplus)
+#' k<-dim(seqfishplus$mu)[2]
+#' damp<-array(0, c(k))
+#' for(i in 1:k){
+#'     di<-findDampFactor(seqfishplus$sigma[,,i], factor=1.05, d_cutoff=1e-5, startValue=0.0001)
+#'     damp[i]<-ifelse(is.null(di), 0, di)
+#' } 
 findDampFactor <- function(sigma, factor=1.05, d_cutoff=1e-60, startValue=0.0001){
 	determinant <- det(sigma)
 	#factor <- 1.05
@@ -134,7 +148,7 @@ findDampFactor <- function(sigma, factor=1.05, d_cutoff=1e-60, startValue=0.0001
 	numdim<-dim(sigma)[1]
 	damp<-NULL
 	if(determinant<d_cutoff){
-		#print("Warning, need to add dampening factor to diagonal entries")
+		print("Warning, need to add dampening factor to diagonal entries")
 		damp <- startValue
 		sigma_2 <- array(0, dim(sigma))
 		sigma_2 <- sigma + diag(numdim) * damp
@@ -159,7 +173,7 @@ findDampFactor <- function(sigma, factor=1.05, d_cutoff=1e-60, startValue=0.0001
 				}
 			}
 		}
-		print(paste0("dampen factor ", damp))
+		print(damp)
 	}
 	damp
 }
