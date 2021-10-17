@@ -548,27 +548,27 @@ smfishHmrf.hmrfem.multi <- function(y, neighbors, numnei, blocks, beta=0.5, mu, 
 	class_id <- max.col(prob, "first")
 
 	t_tot <- 0
-	t_prob <- rep(0, dim(prob)[2])
-	for(j in 1:dim(prob)[1]){
+	t_prob <- rep(0, dim(unnorm_prob)[2])
+	for(j in 1:dim(unnorm_prob)[1]){
 		t_tot_density <- 0
-		for(k in 1:dim(prob)[2]){
-			t_tot_density <- t_tot_density + prob[j,k]
+		for(k in 1:dim(unnorm_prob)[2]){
+			t_tot_density <- t_tot_density + unnorm_prob[j,k]
 		}
-		t_this_prob <- rep(0, dim(prob)[2])
-		for(k in 1:dim(prob)[2]){
-			t_this_prob[k] <- prob[j,k] / t_tot_density
+		t_this_prob <- rep(0, dim(unnorm_prob)[2])
+		for(k in 1:dim(unnorm_prob)[2]){
+			t_this_prob[k] <- unnorm_prob[j,k] / t_tot_density
 			t_prob[k] = t_prob[k] + t_this_prob[k]
 		}
 		t_tot <- t_tot + 1
 	}
-	for(k in 1:dim(prob)[2]){
+	for(k in 1:dim(unnorm_prob)[2]){
 		t_prob[k] <- t_prob[k] / t_tot
 	}
 	t_likelihood <- 0
-	for(j in 1:dim(prob)[1]){
+	for(j in 1:dim(unnorm_prob)[1]){
 		t_this_like <- 0
-		for(k in 1:dim(prob)[2]){
-			t_this_like <- t_this_like + t_prob[k] * prob[j,k]
+		for(k in 1:dim(unnorm_prob)[2]){
+			t_this_like <- t_this_like + t_prob[k] * unnorm_prob[j,k]
 		}
 		t_likelihood <- t_likelihood + log(t_this_like)
 	}
